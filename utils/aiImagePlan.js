@@ -22,6 +22,100 @@ function parseJsonPayload(text) {
   return JSON.parse(jsonText);
 }
 
+function stringifyContextValue(value) {
+  if (value == null) {
+    return "";
+  }
+
+  if (Array.isArray(value)) {
+    return value.length ? JSON.stringify(value, null, 2) : "";
+  }
+
+  if (typeof value === "object") {
+    return Object.keys(value).length ? JSON.stringify(value, null, 2) : "";
+  }
+
+  return String(value || "").trim();
+}
+
+function getContextValue(payload, keys) {
+  for (const key of keys) {
+    const value = stringifyContextValue(payload?.[key]);
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function buildGlobalContext(payload) {
+  if (!payload || Array.isArray(payload) || typeof payload !== "object") {
+    return "";
+  }
+
+  const fields = [
+    { label: "Overall theme", keys: ["overallTheme", "theme"] },
+    { label: "Emotional arc", keys: ["emotionalArc", "arc"] },
+    { label: "Visual rules", keys: ["visualRules", "rules"] },
+    {
+      label: "Continuity guide",
+      keys: ["continuityGuide", "continuity", "sceneContext", "globalContext"],
+    },
+    {
+      label: "Recurring characters",
+      keys: ["recurringCharacters", "characters", "characterBible"],
+    },
+    {
+      label: "Recurring locations",
+      keys: ["recurringLocations", "locations", "locationBible"],
+    },
+    {
+      label: "Recurring visual anchors",
+      keys: ["recurringVisualAnchors", "visualAnchors", "props"],
+    },
+    { label: "Style guide", keys: ["styleGuide", "style", "cinematicStyle"] },
+  ];
+
+  return fields
+    .map(({ label, keys }) => {
+      const value = getContextValue(payload, keys);
+      return value ? `${label}:\n${value}` : "";
+    })
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+export function buildSceneGenerationPrompt(scene, globalContext = "") {
+  const imagePrompt = String(scene?.imagePrompt || scene?.prompt || "").trim();
+  const context = String(globalContext || "").trim();
+  const sceneContinuity = String(
+    scene?.continuityNotes ||
+      scene?.characterContinuity ||
+      scene?.visualContinuity ||
+      ""
+  ).trim();
+
+  if (!context && !sceneContinuity) {
+    return imagePrompt;
+  }
+
+  return [
+    context ? "Continuity context for the full video:" : "",
+    context,
+    context
+      ? "Apply this continuity exactly. Each image is generated independently, so recurring characters, props, wardrobe, location logic, lens, lighting, and color grade must match the context instead of being redesigned."
+      : "",
+    sceneContinuity ? "Scene-specific continuity notes:" : "",
+    sceneContinuity,
+    `Scene ${Number(scene?.sceneNumber) || 1} image prompt:`,
+    imagePrompt,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
 function parseLineRange(value, lineCount) {
   const text = String(value || "");
   const rangeMatch = text.match(/(\d+)\s*(?:-|–|—|to|through)\s*(\d+)/i);
@@ -125,6 +219,12 @@ function normalizeScene(scene, index, lines) {
     visualTheme: String(scene?.visualTheme || "").trim(),
     imagePrompt,
     negativePrompt: String(scene?.negativePrompt || "").trim(),
+    continuityNotes: String(
+      scene?.continuityNotes ||
+        scene?.characterContinuity ||
+        scene?.visualContinuity ||
+        ""
+    ).trim(),
     reason: String(scene?.reason || "").trim(),
     transitionMs,
     explicitRange: lineRange,
@@ -137,6 +237,7 @@ export function parseAiImagePlan(planText, lines) {
   if (!String(planText || "").trim()) {
     return {
       scenes: [],
+      globalContext: "",
       error: "",
     };
   }
@@ -144,10 +245,12 @@ export function parseAiImagePlan(planText, lines) {
   try {
     const payload = parseJsonPayload(planText);
     const rawScenes = Array.isArray(payload) ? payload : payload?.scenes;
+    const globalContext = buildGlobalContext(payload);
 
     if (!Array.isArray(rawScenes) || !rawScenes.length) {
       return {
         scenes: [],
+        globalContext,
         error: "JSON must contain a scenes array.",
       };
     }
@@ -159,6 +262,7 @@ export function parseAiImagePlan(planText, lines) {
     if (!scenes.length) {
       return {
         scenes: [],
+        globalContext,
         error: "No scenes with imagePrompt were found.",
       };
     }
@@ -183,13 +287,16 @@ export function parseAiImagePlan(planText, lines) {
             scene.endIndex == null
               ? fallbackEndIndex
               : Math.max(scene.startIndex, scene.endIndex),
+          generationPrompt: buildSceneGenerationPrompt(scene, globalContext),
         };
       }),
+      globalContext,
       error: "",
     };
   } catch (error) {
     return {
       scenes: [],
+      globalContext: "",
       error: error?.message || "Could not parse scene JSON.",
     };
   }

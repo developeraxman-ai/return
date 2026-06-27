@@ -92,14 +92,14 @@ export default function ImagePromptExportPanel({
     >
       <div>
         <label className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
-          Emotion / theme notes
+          Emotion / theme / continuity notes
         </label>
         <textarea
           value={themeNotes}
           onChange={(event) => setThemeNotes(event.target.value)}
           rows={3}
           className="mt-1 w-full resize-y rounded-md border border-white/10 bg-black/35 p-3 text-sm leading-5 text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/15"
-          placeholder="Example: shame turning into discipline, dark comedy, Bangalore night, lonely room, gym comeback, road at dawn."
+          placeholder="Example: shame turning into discipline, Bangalore night, same MOTHER_A whenever she appears, same small apartment, gym comeback, road at dawn."
         />
       </div>
 

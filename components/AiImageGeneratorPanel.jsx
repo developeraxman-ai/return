@@ -32,6 +32,10 @@ export default function AiImageGeneratorPanel({ lines, setLines }) {
   );
   const canGenerate = Boolean(parsedPlan.scenes.length && lines.length);
 
+  function getGenerationPrompt(scene) {
+    return scene?.generationPrompt || scene?.imagePrompt || "";
+  }
+
   function applyGeneratedMedia(nextGeneratedMedia) {
     setLines((currentLines) =>
       applyGeneratedSceneMedia(currentLines, parsedPlan.scenes, nextGeneratedMedia)
@@ -53,7 +57,7 @@ export default function AiImageGeneratorPanel({ lines, setLines }) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: scene.imagePrompt,
+          prompt: getGenerationPrompt(scene),
           negativePrompt: scene.negativePrompt || DEFAULT_NEGATIVE_PROMPT,
           sceneNumber: scene.sceneNumber,
           size,
@@ -103,7 +107,7 @@ export default function AiImageGeneratorPanel({ lines, setLines }) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            prompt: scene.imagePrompt,
+            prompt: getGenerationPrompt(scene),
             negativePrompt: scene.negativePrompt || DEFAULT_NEGATIVE_PROMPT,
             sceneNumber: scene.sceneNumber,
             size,
@@ -177,7 +181,7 @@ export default function AiImageGeneratorPanel({ lines, setLines }) {
             }}
             rows={8}
             className="mt-1 w-full resize-y rounded-md border border-white/10 bg-black/35 p-3 text-xs leading-5 text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/15"
-            placeholder='Paste ChatGPT JSON here: { "scenes": [{ "sceneNumber": 1, "appliesToLines": "1-4", "transitionAt": "0:00.0", "imagePrompt": "..." }] }'
+            placeholder='Paste ChatGPT JSON here: { "continuityGuide": "...", "recurringCharacters": [{ "tag": "MOTHER_A", "stableDescriptor": "..." }], "scenes": [{ "sceneNumber": 1, "appliesToLines": "1-4", "transitionAt": "0:00.0", "imagePrompt": "..." }] }'
           />
         </div>
         <div>
@@ -237,6 +241,16 @@ export default function AiImageGeneratorPanel({ lines, setLines }) {
         <p className="mt-3 text-xs text-amber-200">{parsedPlan.error}</p>
       ) : null}
       {message ? <p className="mt-3 text-xs text-slate-400">{message}</p> : null}
+      {parsedPlan.globalContext ? (
+        <details className="mt-3 rounded-md border border-white/10 bg-black/25 p-3">
+          <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.14em] text-cyan-100">
+            Continuity Context Included
+          </summary>
+          <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-xs leading-5 text-slate-400">
+            {parsedPlan.globalContext}
+          </pre>
+        </details>
+      ) : null}
 
       <div className="mt-3 max-h-96 space-y-2 overflow-auto pr-1">
         {!parsedPlan.scenes.length ? (

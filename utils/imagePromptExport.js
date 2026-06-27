@@ -40,7 +40,7 @@ export function buildImagePromptBrief({
   const timedLines = formatTimedLines(lines);
   const safeThemeNotes =
     cleanText(themeNotes) ||
-    "[WRITE YOUR EMOTION/THEME HERE. Example: shame turning into discipline, dark comedy, self-confrontation, Bangalore night, lonely room, gym comeback, road at dawn.]";
+    "[WRITE YOUR EMOTION/THEME/CONTINUITY HERE. Example: shame turning into discipline, dark comedy, self-confrontation, Bangalore night, lonely room, gym comeback, road at dawn. Recurring mother: same woman in every scene she appears.]";
 
   return `I am making a faceless motivational short/video in THE RETURN Editor.
 
@@ -48,7 +48,7 @@ I will paste timed caption lines from my app. Your job is to decide the emotiona
 
 Do not create one image per line unless needed. Group consecutive lines into visual scenes. Each scene should cover multiple caption lines when the emotion/context is the same.
 
-My intended emotion/theme notes:
+My intended emotion/theme/continuity notes:
 ${safeThemeNotes}
 
 Return JSON only.
@@ -65,6 +65,20 @@ Rules:
 - Use the same image across consecutive lines when it improves flow.
 - If a line is abstract, convert it into a concrete visual metaphor.
 - Indian/Bangalore context is allowed only if it naturally fits.
+- Build a continuity guide before the scene list.
+- Treat every image as independently generated. That means each imagePrompt must repeat the exact stable descriptor for every recurring character, object, and location that appears in that scene.
+- Use explicit recurring tags like MOTHER_A, SON_A, ROOM_A, TEMPLE_STREET_A, etc. Reuse the same tag and the same descriptor every time that subject returns.
+- If MOTHER_A appears in scene 1 and scene 6, scene 6 must describe the same MOTHER_A again with the same age range, build, hair, wardrobe palette, posture, face visibility, and emotional presence.
+- Keep the same cinematic style, lens language, color grade, lighting logic, and crop safety across all scenes unless there is a clear story reason to change.
+
+At the top level, provide:
+- overallTheme
+- emotionalArc
+- visualRules
+- continuityGuide
+- recurringCharacters
+- recurringLocations
+- styleGuide
 
 For each scene, provide:
 - sceneNumber
@@ -76,7 +90,7 @@ For each scene, provide:
 - negativePrompt
 - reason
 
-The imagePrompt must be directly usable in an AI image generator.
+The imagePrompt must be directly usable in an AI image generator and must include the relevant recurring tags and full descriptors from the continuity guide.
 
 Output JSON only in this shape:
 
@@ -84,6 +98,23 @@ Output JSON only in this shape:
   "overallTheme": "",
   "emotionalArc": "",
   "visualRules": "",
+  "continuityGuide": "",
+  "recurringCharacters": [
+    {
+      "tag": "MOTHER_A",
+      "role": "",
+      "stableDescriptor": "",
+      "mustStaySame": ""
+    }
+  ],
+  "recurringLocations": [
+    {
+      "tag": "ROOM_A",
+      "stableDescriptor": "",
+      "mustStaySame": ""
+    }
+  ],
+  "styleGuide": "",
   "scenes": [
     {
       "sceneNumber": 1,
